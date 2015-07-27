@@ -14,14 +14,12 @@ class MXWdata:
   """
   Load and structure a single .mxw ASCII file
 
-  Data can be accessed using the keywords:
-
   Example:
 
     d = MXWdata().load( "myfile.mxw" )
-    d.parse( ['t', 'E', 'A(500,510)/A(410/415)'] )
+    d.parse( ['t', 'E', 'A(500,510)/A(410,415)'] )
 
-  where the math and the following keywords can be used:
+  where math and the following keywords can be mixed:
 
   - `E` = electrode value (same as `pH`)
   - `t` = time [deciseconds]
@@ -72,8 +70,8 @@ class MXWdata:
     self.prop["SPEC"]  = np.loadtxt(s)            # store spectra as numpy matrix
     return self
 
-  def parse( self, expr ):
-    """ Convert expression string to list """
+  def parse( self, exprlist ):
+    """ Parse list of expressions """
     t  = self.prop["DSEC"]
     E  = self.prop["ELE"]
     V  = self.prop["VOL"]
@@ -82,7 +80,7 @@ class MXWdata:
     S  = self.prop["SPEC"]
     pH = E
     row = []
-    for i in expr:
+    for i in exprlist:
       i = i.replace("A", "self.absorbance")
       exec 'row.append(' + i + ')'
     return row
@@ -107,7 +105,8 @@ if __name__ == "__main__":
       '  --fmt t E C (default)\n'
       '  --fmt pH T+298.15 "A(420,425)/A(500,501)"\n'
       '  --fmt "min( S[:,0] )" (minumum wavelength)\n'
-      '  --fmt "max(S, key=lambda r: r[1] )[0]" (wavelength w. max absorbance)')
+      '  --fmt "S[ np.argmax(S[:,1]) ][0] (wavelength w. min absorbance)\n'
+      '  --fmt "max(S, key=lambda r: r[1] )[0]" (also wavelength w. max absorbance)')
   ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
   args = ps.parse_args()
 
