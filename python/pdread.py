@@ -16,16 +16,23 @@ class MXWdata:
 
   Data can be accessed using the keywords:
 
-  - `ELE`  = electrode value
-  - `DSEC` = time in deciseconds
-  - `TIME` = real time as text
-  - `TEMP` = temperature
-  - `SPEC` = spectral data (matrix)
+  Example:
+
+    d = MXWdata().load( "myfile.mxw" )
+    d.parse( 't E A(500,510)/A(410/415)' )
+
+  where the math and the following keywords can be used:
+
+  - `E`  = electrode value
+  - `t` = time in deciseconds
+  - `T` = temperature
+  - `A` = avg. absorbance in internal [nm]
+  - `S` = spectral data (matrix)
 
   To select between different spectra, use the `selSpec()` function (unfinished).
   """
 
-  def __getitem__( self, key ): return self.prop[key]
+  #def __getitem__( self, key ): return self.prop[key]
   def wavelength( self ): return self.prop["SPEC"][:,0]
   def numSpec( self ): return self.prop["SPEC"].ndim
 
@@ -66,14 +73,15 @@ class MXWdata:
     return self
 
   def parse( self, expr ):
-    """ Convert expression to list """
-    row = []
+    """ Convert expression string to list """
     t = self.prop["DSEC"]
     E  = self.prop["ELE"]
     V  = self.prop["VOL"]
     T = self.prop["TEMP"]
     C = self.prop["CONC"]
+    S = self.prop["SPEC"]
     expr = expr.replace("A", "self.absorbance")
+    row = []
     for i in expr.split():
       exec 'row.append(' + i + ')'
     return row
