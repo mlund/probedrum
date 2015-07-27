@@ -19,13 +19,13 @@ class MXWdata:
   Example:
 
     d = MXWdata().load( "myfile.mxw" )
-    d.parse( 't E A(500,510)/A(410/415)' )
+    d.parse( ['t', 'E', 'A(500,510)/A(410/415)'] )
 
   where the math and the following keywords can be used:
 
-  - `E`  = electrode value
-  - `t` = time in deciseconds
-  - `T` = temperature
+  - `E` = electrode value (same as `pH`)
+  - `t` = time [deciseconds]
+  - `T` = temperature [degrees]
   - `A` = avg. absorbance in internal [nm]
   - `S` = spectral data (matrix)
 
@@ -74,15 +74,16 @@ class MXWdata:
 
   def parse( self, expr ):
     """ Convert expression string to list """
-    t = self.prop["DSEC"]
+    t  = self.prop["DSEC"]
     E  = self.prop["ELE"]
     V  = self.prop["VOL"]
-    T = self.prop["TEMP"]
-    C = self.prop["CONC"]
-    S = self.prop["SPEC"]
-    expr = expr.replace("A", "self.absorbance")
+    T  = self.prop["TEMP"]
+    C  = self.prop["CONC"]
+    S  = self.prop["SPEC"]
+    pH = E
     row = []
-    for i in expr.split():
+    for i in expr:
+      i = i.replace("A", "self.absorbance")
       exec 'row.append(' + i + ')'
     return row
 
@@ -94,14 +95,19 @@ if __name__ == "__main__":
   ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files', formatter_class=RawTextHelpFormatter )
   ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], metavar=('xcol', 'ycol'),
       help='plot columns using matplotlib')
-  ps.add_argument( '--fmt', type=str, default='t E A(500,510)',\
-      help = 'output format string where:\n\n'
-      't = time\n' 'E = electrode\n' 'T = temp\n' 'V = vol\n' 'C = conc\n'
-      'S = spectrum (matrix)\n' 'A(..,..) = avg. absorbance\n\n'
+  ps.add_argument( '--fmt', nargs="+", type=str, default=('t', 'E', 'C'),\
+      help = 'output format where:\n\n'
+      't = time (deciseconds)\n'
+      'E = electrode (pH may be used instead)\n'
+      'T = temperature (degrees)\n'
+      'V = sample volume (microliter)\n'
+      'C = concentration (mM)\n'
+      'S = spectrum (matrix)\n' 'A(..,..) = avg. absorbance in wavelength interval\n\n'
       'Examples:\n'
-      '  --fmt \"%(default)s\" (default)\n'
-      '  --fmt \"t T+298.15 A(420,425) / A(500,501)\"\n'
-      '  --fmt \"np.min(S[:,0])\"')
+      '  --fmt t E C (default)\n'
+      '  --fmt pH T+298.15 "A(420,425)/A(500,501)"\n'
+      '  --fmt "min( S[:,0] )" (minumum wavelength)\n'
+      '  --fmt "max(S, key=lambda r: r[1] )[0]" (wavelength w. max absorbance)')
   ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
   args = ps.parse_args()
 
@@ -116,8 +122,7 @@ if __name__ == "__main__":
   for row in d:
     print " ".join( map(str, row) )   # print to screen, filter out brackets
 
-  colx = args.plot[0]
-  coly = args.plot[1]
+  colx, coly = args.plot
   if colx != coly:
     import matplotlib.pyplot as plt
     m = np.array( d )
