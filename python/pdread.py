@@ -52,6 +52,8 @@ class MXWdata:
 
   def load( self, file ):
     """ Load a single mxw file incl. header data and all spectra """
+    if not os.path.isfile( file ):
+      sys.exit( "Error: File ", file, " does not exist." )
     s = open( file, 'U' ).read().replace(',','.') # convert CR and commas
     s = StringIO.StringIO( s )                    # a new, in-memory file
     for i in s.readline().split("\t"):            # loop over tab-separated header items
@@ -63,35 +65,42 @@ class MXWdata:
     self.prop["SPEC"]  = np.loadtxt(s)            # store spectra as numpy matrix
     return self
 
-def loaddir( path ):
-  """ Returns list w all data as a function of time """
-  if not os.path.isdir( path ):
-    sys.exit( "Error: " + path + " is not a directory." )
-  l = []
-  for file in glob.glob( path + "/*.mxw" ):
-    l.append( MXWdata().load( file ) )
-  return l
-
 # If run as main program (instead of as module)
 if __name__ == "__main__":
-  import getopt
-  import matplotlib.pyplot as plt
+  import argparse
 
-  if len( sys.argv ) != 2:
-    print "Usage:", sys.argv[0], "[directory name]"
-  else:
-    timedata = loaddir( sys.argv[1] )
+  datakeys = ['DSEC', 'ELE', 'VOL', 'TEMP', 'CONC', 'ABS']
 
-    # example: matrix w. time, electrode output, and avg. absorbance
-    m = np.empty( shape=[0,3] )
-    for i in timedata:
-      row = [ i["DSEC"], i["ELE"], i.absorbance(500,510) ]
-      m = np.append( m, [row], axis=0 )
+  parser = argparse.ArgumentParser( description='Read Probe Drum MXW data files' )
+  parser.add_argument( '--plot',    action='store_true', help='plot using matplotlib' )
+  parser.add_argument( '--plotfmt', type=str, nargs=2, default=['DSEC', 'ELE'], choices=datakeys,
+      help='specify which two columns for plot')
+  parser.add_argument( '--lrange',  type=float, nargs=2, default=[500,510],
+      help='wavelength range for absorbance average [nm]' )
+  parser.add_argument( 'files',     nargs='+', type=str, help='List of MXW ascii files' )
+  args = parser.parse_args()
 
-    for row in m:
-      print " ".join( map(str, row) ) # print to screen
+  timedata = []                       # list w. ALL data from every file
+  for file in args.files:
+    timedata.append( MXWdata().load( file ) )
 
-    time, pH, A = m.T                 # break out columns to indivial arrays
-    plt.plot( time, A )               # ...and plot 
+  d = []                              # list w. select data from every file
+  for i in timedata:
+    row = []
+    for key in datakeys:              # loop over all keys
+      if key=="ABS":
+        row.append( i.absorbance( *args.lrange ) )
+      else:
+        row.append( i[key] )
+    d.append( row )
+
+  for row in d:
+    print " ".join( map(str, row) )   # print to screen
+
+  if args.plot:
+    import matplotlib.pyplot as plt
+    m = np.array( d )
+    colx = datakeys.index( args.plotfmt[0] )
+    coly = datakeys.index( args.plotfmt[1] )
+    plt.plot( m[:,colx], m[:,coly] )
     plt.show()
-
