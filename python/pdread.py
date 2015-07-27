@@ -65,20 +65,33 @@ class MXWdata:
     self.prop["SPEC"]  = np.loadtxt(s)            # store spectra as numpy matrix
     return self
 
+  def parse( self, expr ):
+    """ Convert expression to list """
+    row = []
+    t = self.prop["DSEC"]
+    E  = self.prop["ELE"]
+    V  = self.prop["VOL"]
+    T = self.prop["TEMP"]
+    C = self.prop["CONC"]
+    expr = expr.replace("A", "self.absorbance")
+    for i in expr.split():
+      exec 'row.append(' + i + ')'
+    return row
+
 # If run as main program (instead of as module)
 if __name__ == "__main__":
-  import argparse
+  import argparse, parser
 
-  datakeys = ['DSEC', 'ELE', 'VOL', 'TEMP', 'CONC', 'ABS']
-
-  parser = argparse.ArgumentParser( description='Read Probe Drum MXW data files' )
-  parser.add_argument( '--plot',    action='store_true', help='plot using matplotlib' )
-  parser.add_argument( '--plotfmt', type=str, nargs=2, default=['DSEC', 'ELE'], choices=datakeys,
-      help='specify which two columns for plot')
-  parser.add_argument( '--lrange',  type=float, nargs=2, default=[500,510],
-      help='wavelength range for absorbance average [nm]' )
-  parser.add_argument( 'files',     nargs='+', type=str, help='List of MXW ascii files' )
-  args = parser.parse_args()
+  ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files' )
+  ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], help='plot columns')
+  ps.add_argument( '--fmt', type=str, nargs=1, default='t E A(500,510)',\
+      help = 'output format string where \
+          t=time; E=electrode; T=temp; V=vol; C=conc; \
+          A(..,..)=avg. absorbance.\
+          Default: \"%(default)s\". Python math is allowed:\
+          --fmt \"t T+298.15 A(420,425) / A(500,501)\"')
+  ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
+  args = ps.parse_args()
 
   timedata = []                       # list w. ALL data from every file
   for file in args.files:
@@ -86,21 +99,16 @@ if __name__ == "__main__":
 
   d = []                              # list w. select data from every file
   for i in timedata:
-    row = []
-    for key in datakeys:              # loop over all keys
-      if key=="ABS":
-        row.append( i.absorbance( *args.lrange ) )
-      else:
-        row.append( i[key] )
-    d.append( row )
+    args.fmt = ''.join( args.fmt )
+    d.append( i.parse( args.fmt ) )
 
   for row in d:
-    print " ".join( map(str, row) )   # print to screen
+    print " ".join( map(str, row) )   # print to screen, filter out brackets
 
-  if args.plot:
+  colx = args.plot[0]
+  coly = args.plot[1]
+  if colx != coly:
     import matplotlib.pyplot as plt
     m = np.array( d )
-    colx = datakeys.index( args.plotfmt[0] )
-    coly = datakeys.index( args.plotfmt[1] )
     plt.plot( m[:,colx], m[:,coly] )
     plt.show()
