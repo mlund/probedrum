@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 import numpy as np
-import matplotlib.pyplot as plt
-import StringIO, glob, os, sys, getopt
+import StringIO, glob, os, sys
 
 """
-@desc   script for handling Probe Drum ascii data
+@desc   module for handling Probe Drum ascii data
 @todo   only tested w. one spectrum
 @date   july 2015, malmo
 @author m. lund
@@ -73,19 +72,26 @@ def loaddir( path ):
     l.append( MXWdata().load( file ) )
   return l
 
-# Main program
-if len( sys.argv ) != 2:
-  print "Usage:", sys.argv[0], "[directory name]"
-else:
-  timedata = loaddir( sys.argv[1] )
+# If run as main program (instead of as module)
+if __name__ == "__main__":
+  import getopt
+  import matplotlib.pyplot as plt
 
-  # example: matrix w. time, electrode output, and avg. absorbance
-  m = np.empty( shape=[0,3] )
-  for i in timedata:
-    m = np.append( m, [[ i["DSEC"], i["ELE"], i.absorbance(500,510) ]], axis=0 )
+  if len( sys.argv ) != 2:
+    print "Usage:", sys.argv[0], "[directory name]"
+  else:
+    timedata = loaddir( sys.argv[1] )
 
-  time, pH, A = m.T  # break out columns to indivial arrays
+    # example: matrix w. time, electrode output, and avg. absorbance
+    m = np.empty( shape=[0,3] )
+    for i in timedata:
+      row = [ i["DSEC"], i["ELE"], i.absorbance(500,510) ]
+      m = np.append( m, [row], axis=0 )
 
-  plt.plot( time, A ) 
-  plt.show()
+    for row in m:
+      print " ".join( map(str, row) ) # print to screen
+
+    time, pH, A = m.T                 # break out columns to indivial arrays
+    plt.plot( time, A )               # ...and plot 
+    plt.show()
 
