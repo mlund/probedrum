@@ -88,16 +88,20 @@ class MXWdata:
 
 # If run as main program (instead of as module)
 if __name__ == "__main__":
-  import argparse, parser
+  import argparse
+  from argparse import RawTextHelpFormatter
 
-  ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files' )
-  ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], help='plot columns')
-  ps.add_argument( '--fmt', type=str, nargs=1, default='t E A(500,510)',\
-      help = 'output format string where \
-          t=time; E=electrode; T=temp; V=vol; C=conc; \
-          A(..,..)=avg. absorbance.\
-          Default: \"%(default)s\". Python math is allowed:\
-          --fmt \"t T+298.15 A(420,425) / A(500,501)\"')
+  ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files', formatter_class=RawTextHelpFormatter )
+  ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], metavar=('xcol', 'ycol'),
+      help='plot columns using matplotlib')
+  ps.add_argument( '--fmt', type=str, default='t E A(500,510)',\
+      help = 'output format string where:\n\n'
+      't = time\n' 'E = electrode\n' 'T = temp\n' 'V = vol\n' 'C = conc\n'
+      'S = spectrum (matrix)\n' 'A(..,..) = avg. absorbance\n\n'
+      'Examples:\n'
+      '  --fmt \"%(default)s\" (default)\n'
+      '  --fmt \"t T+298.15 A(420,425) / A(500,501)\"\n'
+      '  --fmt \"np.min(S[:,0])\"')
   ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
   args = ps.parse_args()
 
@@ -107,7 +111,6 @@ if __name__ == "__main__":
 
   d = []                              # list w. select data from every file
   for i in timedata:
-    args.fmt = ''.join( args.fmt )
     d.append( i.parse( args.fmt ) )
 
   for row in d:
