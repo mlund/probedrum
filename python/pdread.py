@@ -88,7 +88,10 @@ class MXWdata:
 # If run as main program (instead of as module)
 if __name__ == "__main__":
   import argparse
+  from sys import stdout
   from argparse import RawTextHelpFormatter
+
+  np.set_printoptions(threshold=np.nan, suppress=True)
 
   ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files', formatter_class=RawTextHelpFormatter )
   ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], metavar=('xcol', 'ycol'),
@@ -105,8 +108,9 @@ if __name__ == "__main__":
       '  --fmt t E C (default)\n'
       '  --fmt pH T+298.15 "A(420,425)/A(500,501)"\n'
       '  --fmt "min( S[:,0] )" (minumum wavelength)\n'
-      '  --fmt "S[ np.argmax(S[:,1]) ][0] (wavelength w. min absorbance)\n'
-      '  --fmt "max(S, key=lambda r: r[1] )[0]" (also wavelength w. max absorbance)')
+      '  --fmt "S[ np.argmax(S[:,1]) ][0]" (wavelength w. max absorbance)\n'
+      '  --fmt "S[:,[0,1]]" (spectrum: wavelength vs absorbance)\n'
+      '  --fmt "np.savetxt( stdout, S[:,[0,1]] )" (prettier version of above)\n\n')
   ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
   args = ps.parse_args()
 
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     d.append( i.parse( args.fmt ) )
 
   for row in d:
-    print " ".join( map(str, row) )   # print to screen, filter out brackets
+    print ' '.join( map(str, row) )   # print to screen, filter out brackets
 
   colx, coly = args.plot
   if colx != coly:
@@ -127,3 +131,4 @@ if __name__ == "__main__":
     m = np.array( d )
     plt.plot( m[:,colx], m[:,coly] )
     plt.show()
+
