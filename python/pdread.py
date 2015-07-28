@@ -58,7 +58,7 @@ class MXWdata:
   def load( self, file ):
     """ Load a single mxw file incl. header data and all spectra """
     if not os.path.isfile( file ):
-      sys.exit( "Error: File ", file, " does not exist." )
+      sys.exit( "Error: File "+file+" does not exist." )
     s = open( file, 'U' ).read().replace(',','.') # convert CR and commas
     s = StringIO.StringIO( s )                    # a new, in-memory file
     for i in s.readline().split("\t"):            # loop over tab-separated header items
@@ -85,18 +85,18 @@ class MXWdata:
       exec 'row.append(' + i + ')'
     return row
 
-# If run as main program (instead of as module)
+# If run as main program
 if __name__ == "__main__":
   import argparse
   from sys import stdout
   from argparse import RawTextHelpFormatter
 
-  np.set_printoptions(threshold=np.nan, suppress=True)
+  np.set_printoptions( threshold=np.nan, suppress=True )
 
-  ps = argparse.ArgumentParser( description='Read Probe Drum MXW data files', formatter_class=RawTextHelpFormatter )
-  ps.add_argument( '--plot', type=int, nargs=2, default=[0,0], metavar=('xcol', 'ycol'),
-      help='plot columns using matplotlib')
-  ps.add_argument( '--fmt', nargs="+", type=str, default=('t', 'E', 'C'),\
+  ps = argparse.ArgumentParser( description = 'Read Probe Drum MXW data files', formatter_class = RawTextHelpFormatter )
+  ps.add_argument( '--plot', type = int, nargs = 2, default = [0,0], metavar = ('xcol', 'ycol'),
+      help = 'plot columns using matplotlib' )
+  ps.add_argument( '--fmt', nargs = "+", type = str, default = ('t', 'E', 'C'),\
       help = 'output format where:\n\n'
       't = time (deciseconds)\n'
       'E = electrode (pH may be used instead)\n'
@@ -106,12 +106,12 @@ if __name__ == "__main__":
       'S = spectrum (matrix)\n' 'A(..,..) = avg. absorbance in wavelength interval\n\n'
       'Examples:\n'
       '  --fmt t E C (default)\n'
-      '  --fmt pH T+298.15 "A(420,425)/A(500,501)"\n'
+      '  --fmt pH T+273.15 "A(420,425)/A(500,501)"\n'
       '  --fmt "min( S[:,0] )" (minumum wavelength)\n'
       '  --fmt "S[ np.argmax(S[:,1]) ][0]" (wavelength w. max absorbance)\n'
       '  --fmt "S[:,[0,1]]" (spectrum: wavelength vs absorbance)\n'
       '  --fmt "np.savetxt( stdout, S[:,[0,1]] )" (prettier version of above)\n\n')
-  ps.add_argument( 'files', nargs='+', type=str, help='List of MXW ascii files' )
+  ps.add_argument( 'files', nargs = '+', type = str, help = 'List of MXW ascii files' )
   args = ps.parse_args()
 
   timedata = []                       # list w. ALL data from every file
